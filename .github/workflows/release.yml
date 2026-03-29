@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version component to bump'
+        required: true
+        default: minor
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Bump version
+        id: ver
+        run: |
+          NEW_VER=$(python3 scripts/bump_version.py ${{ inputs.bump }})
+          echo "version=$NEW_VER" >> "$GITHUB_OUTPUT"
+          echo "Bumped to $NEW_VER"
+
+      - name: Regenerate Xcode project
+        run: xcodegen generate
+
+      - name: Commit, tag and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add project.yml Pomodoro.xcodeproj/project.pbxproj
+          git commit -m "Release v${{ steps.ver.outputs.version }}"
+          git tag "v${{ steps.ver.outputs.version }}"
+          git push origin HEAD --tags
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: v${{ steps.ver.outputs.version }}
+          generate_release_notes: true
+
+      - name: Build app
+        run: |
+          xcodebuild archive \
+            -project Pomodoro.xcodeproj \
+            -scheme Pomodoro \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/Pomodoro.xcarchive" \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            SKIP_INSTALL=NO
+
+      - name: Package app
+        run: |
+          APP=$(find "$RUNNER_TEMP/Pomodoro.xcarchive" -name "Pomodoro.app" | head -1)
+          cd "$(dirname "$APP")"
+          zip -r "$RUNNER_TEMP/Pomodoro-v${{ steps.ver.outputs.version }}.zip" Pomodoro.app
+
+      - name: Upload app to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          files: ${{ runner.temp }}/Pomodoro-v${{ steps.ver.outputs.version }}.zip
