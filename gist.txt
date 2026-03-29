@@ -1,0 +1,12 @@
+Total usage est:        9 Premium requests
+ API time spent:         12m 23s
+ Total session time:     2h 3m 56s
+ Total code changes:     +779 -53
+ Breakdown by AI model:
+  claude-sonnet-4.6        4.7m in, 42.5k out, 4.4m cached (Est. 9 Premium requests)
+
+ Resume this session with:
+   copilot --resume=d71e0d41-dc89-47e4-9483-1c740319bd45
+
+
+https://gist.github.com/zbycz/cfd1100763e9841690684e2da3228c24

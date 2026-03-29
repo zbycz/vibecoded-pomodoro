@@ -30,12 +30,13 @@ struct TimeLogManager {
         try? content.write(to: fileURL, atomically: true, encoding: .utf8)
     }
 
-    /// Open the log file in the default text editor.
+    /// Open the log file in TextEdit.
     func openLogFile() {
         if !FileManager.default.fileExists(atPath: fileURL.path) {
             try? "".write(to: fileURL, atomically: true, encoding: .utf8)
         }
-        NSWorkspace.shared.open(fileURL)
+        let textEdit = URL(fileURLWithPath: "/System/Applications/TextEdit.app")
+        NSWorkspace.shared.open([fileURL], withApplicationAt: textEdit, configuration: NSWorkspace.OpenConfiguration())
     }
 
     // MARK: - Formatters
