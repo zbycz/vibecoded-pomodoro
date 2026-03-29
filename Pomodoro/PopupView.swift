@@ -15,16 +15,13 @@ struct PopupView: View {
                 CompletedView(vm: vm)
             }
 
-            Divider()
-                .padding(.top, 12)
-
             Button(action: { TimeLogManager().openLogFile() }) {
                 Label("Show Time Log", systemImage: "doc.text")
                     .font(.caption)
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .padding(.top, 8)
+            .padding(.top, 12)
         }
         .frame(width: 260)
         .padding(20)
@@ -118,25 +115,22 @@ private struct CompletedView: View {
             }
 
             // Break timer row
-            HStack(spacing: 8) {
+            HStack(alignment: .center, spacing: 6) {
                 Text("Break")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(vm.breakElapsedFormatted)
-                    .font(.system(.body, design: .monospaced).weight(.medium))
+                    .font(.system(.caption, design: .monospaced).weight(.medium))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
-
                 Button(action: vm.resetBreakTimer) {
                     Image(systemName: "xmark")
-                        .font(.caption.weight(.bold))
+                        .font(.system(size: 8, weight: .bold))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
                 .help("Reset break timer")
             }
-
-            Divider()
 
             // Start next
             Button(action: vm.start) {
