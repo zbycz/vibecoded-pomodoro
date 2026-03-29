@@ -31,7 +31,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Keep status item in sync with timer state
         Publishers.CombineLatest(vm.$state, vm.$remaining)
             .receive(on: RunLoop.main)
-            .sink { [weak self] _, _ in self?.updateStatusItem() }
+            .sink { [weak self] state, _ in
+                self?.updateStatusItem()
+                if state == .completed { self?.openPopover() }
+            }
             .store(in: &cancellables)
     }
 
@@ -47,10 +50,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func togglePopover() {
-        guard let button = statusItem.button else { return }
+        guard statusItem.button != nil else { return }
         if popover.isShown {
             popover.performClose(nil)
         } else {
+            openPopover()
+        }
+    }
+
+    private func openPopover() {
+        guard let button = statusItem.button else { return }
+        if !popover.isShown {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
         }

@@ -48,7 +48,7 @@ struct TimeLogManager {
 
     private func dateString(_ date: Date) -> String {
         let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
+        f.dateFormat = "yyyy-MM-dd EEE"
         return f.string(from: date)
     }
 }
