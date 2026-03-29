@@ -21,6 +21,8 @@ targets:
     platform: macOS
     sources:
       - path: Pomodoro
+    dependencies:
+      - sdk: ServiceManagement.framework
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pomodoro.app

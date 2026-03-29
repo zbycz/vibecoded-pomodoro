@@ -14,6 +14,17 @@ struct PopupView: View {
             case .completed:
                 CompletedView(vm: vm)
             }
+
+            Divider()
+                .padding(.top, 12)
+
+            Button(action: { TimeLogManager().openLogFile() }) {
+                Label("Show Time Log", systemImage: "doc.text")
+                    .font(.caption)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .padding(.top, 8)
         }
         .frame(width: 260)
         .padding(20)
@@ -93,7 +104,6 @@ private struct RunningView: View {
 
 private struct CompletedView: View {
     @ObservedObject var vm: TimerViewModel
-    private let logManager = TimeLogManager()
 
     var body: some View {
         VStack(spacing: 20) {
@@ -136,14 +146,6 @@ private struct CompletedView: View {
                     .padding(.vertical, 8)
             }
             .buttonStyle(.borderedProminent)
-
-            // Show log
-            Button(action: logManager.openLogFile) {
-                Label("Show Time Log", systemImage: "doc.text")
-                    .font(.caption)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
         }
     }
 }
