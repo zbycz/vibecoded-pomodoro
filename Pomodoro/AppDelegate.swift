@@ -114,7 +114,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let button = statusItem.button else { return }
         switch vm.state {
         case .idle, .completed:
-            button.image = NSImage(systemSymbolName: "stopwatch", accessibilityDescription: "Pomodoro")
+            if let img = NSImage(systemSymbolName: "stopwatch", accessibilityDescription: "Pomodoro") {
+                img.alignmentRect = NSRect(x: 0, y: 2, width: img.size.width, height: img.size.height)
+                button.image = img
+            }
             button.title = ""
             button.imagePosition = .imageOnly
         case .running, .paused:
