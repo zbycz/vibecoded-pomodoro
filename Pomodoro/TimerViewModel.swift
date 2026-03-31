@@ -124,8 +124,8 @@ final class TimerViewModel: ObservableObject {
     }
 
     private func saveSession(duration: TimeInterval) {
-        let end = Date()
-        let start = sessionStart ?? end.addingTimeInterval(-duration)
+        let start = sessionStart ?? Date().addingTimeInterval(-duration)
+        let end = start.addingTimeInterval(duration)
         logManager.append(start: start, end: end)
     }
 
