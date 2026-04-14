@@ -24,6 +24,7 @@ final class TimerViewModel: ObservableObject {
     // MARK: - Constants
 
     static let workDuration: TimeInterval = 25 * 60
+    static let maxBreakDuration: TimeInterval = 12 * 60 * 60
 
     // MARK: - Private
 
@@ -47,6 +48,7 @@ final class TimerViewModel: ObservableObject {
 
     func start() {
         guard state == .idle || state == .completed else { return }
+        resetBreakTimer()
         remaining = Self.workDuration
         sessionStart = Date()
         state = .running
@@ -131,7 +133,21 @@ final class TimerViewModel: ObservableObject {
             breakElapsed = 0
             return
         }
-        breakElapsed = max(0, floor(now.timeIntervalSince(breakStart)))
+        let elapsed = now.timeIntervalSince(breakStart)
+        guard elapsed <= Self.maxBreakDuration else {
+            resetToInitialState()
+            return
+        }
+        breakElapsed = max(0, floor(elapsed))
+    }
+
+    private func resetToInitialState() {
+        workTimer?.invalidate()
+        workTimer = nil
+        sessionStart = nil
+        state = .idle
+        remaining = Self.workDuration
+        resetBreakTimer()
     }
 
     private func saveSession(duration: TimeInterval) {
