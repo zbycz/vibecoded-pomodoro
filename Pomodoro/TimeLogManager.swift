@@ -12,7 +12,7 @@ struct TimeLogManager {
 
     /// Append a completed session to the log file.
     func append(start: Date, end: Date) {
-        let minutes = max(1, Int(end.timeIntervalSince(start) / 60))
+        let minutes = max(1, Int(ceil(end.timeIntervalSince(start) / 60)))
         let line = "- \(timeString(start)) – \(timeString(end)) (\(minutes) min)\n"
         let heading = "## \(dateString(start))\n"
 
