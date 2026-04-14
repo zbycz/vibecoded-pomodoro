@@ -27,9 +27,10 @@ final class TimerViewModel: ObservableObject {
 
     // MARK: - Private
 
-    private var workTimer: Timer?
-    private var breakTimer: Timer?
-    private var sessionStart: Date?
+     private var workTimer: Timer?
+     private var breakTimer: Timer?
+     private var sessionStart: Date?
+    private var breakStart: Date?
 
     private let logManager = TimeLogManager()
 
@@ -77,6 +78,7 @@ final class TimerViewModel: ObservableObject {
     func resetBreakTimer() {
         breakTimer?.invalidate()
         breakTimer = nil
+        breakStart = nil
         breakElapsed = 0
     }
 
@@ -115,12 +117,21 @@ final class TimerViewModel: ObservableObject {
     }
 
     private func startBreakTimer() {
+        breakStart = Date()
         breakElapsed = 0
         breakTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
-                self?.breakElapsed += 1
+                self?.updateBreakElapsed()
             }
         }
+    }
+
+    private func updateBreakElapsed(now: Date = Date()) {
+        guard let breakStart else {
+            breakElapsed = 0
+            return
+        }
+        breakElapsed = max(0, floor(now.timeIntervalSince(breakStart)))
     }
 
     private func saveSession(duration: TimeInterval) {
