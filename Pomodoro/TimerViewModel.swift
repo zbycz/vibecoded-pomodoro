@@ -170,7 +170,12 @@ final class TimerViewModel: ObservableObject {
     private func detectActivityIfNeeded(now: Date) {
         guard detectedActivityAt == nil, breakElapsed >= Self.activityDetectionDelay else { return }
         let secondsSinceLast = secondsSinceLastUserInput()
+        // Require the event to be recent (sustained activity right now)…
         guard secondsSinceLast < Self.activityIdleThreshold else { return }
+        // …AND to have occurred after the grace period ended, so that input
+        // from during the previous work session or the first 10s of break
+        // does not count as "user came back".
+        guard secondsSinceLast < breakElapsed - Self.activityDetectionDelay else { return }
         detectedActivityAt = now.addingTimeInterval(-secondsSinceLast)
     }
 
