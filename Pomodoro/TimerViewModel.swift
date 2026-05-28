@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import CoreGraphics
 
 // MARK: - Timer State
 
@@ -20,11 +21,22 @@ final class TimerViewModel: ObservableObject {
     @Published private(set) var state: PomodoroState = .idle
     @Published private(set) var remaining: TimeInterval = 25 * 60
     @Published private(set) var breakElapsed: TimeInterval = 0
+    @Published private(set) var detectedActivityAt: Date?
 
     // MARK: - Constants
 
     static let workDuration: TimeInterval = 25 * 60
     static let maxBreakDuration: TimeInterval = 12 * 60 * 60
+    static let activityDetectionDelay: TimeInterval = 10
+    static let activityIdleThreshold: TimeInterval = 2
+
+    private static let activityEventTypes: [CGEventType] = [
+        .keyDown, .flagsChanged,
+        .leftMouseDown, .rightMouseDown, .otherMouseDown,
+        .mouseMoved,
+        .leftMouseDragged, .rightMouseDragged, .otherMouseDragged,
+        .scrollWheel
+    ]
 
     // MARK: - Private
 
@@ -47,12 +59,24 @@ final class TimerViewModel: ObservableObject {
     // MARK: - Actions
 
     func start() {
+        start(at: nil)
+    }
+
+    func start(at startDate: Date?) {
         guard state == .idle || state == .completed else { return }
         resetBreakTimer()
-        remaining = Self.workDuration
-        sessionStart = Date()
+        let now = Date()
+        let earliestAllowed = now.addingTimeInterval(-Self.workDuration)
+        let actualStart = max(startDate ?? now, earliestAllowed)
+        let elapsed = max(0, now.timeIntervalSince(actualStart))
+        remaining = max(0, Self.workDuration - elapsed)
+        sessionStart = actualStart
         state = .running
-        startWorkTimer()
+        if remaining <= 0 {
+            finishNaturally()
+        } else {
+            startWorkTimer()
+        }
     }
 
     func pause() {
@@ -82,6 +106,7 @@ final class TimerViewModel: ObservableObject {
         breakTimer = nil
         breakStart = nil
         breakElapsed = 0
+        detectedActivityAt = nil
     }
 
     // MARK: - Private helpers
@@ -139,6 +164,20 @@ final class TimerViewModel: ObservableObject {
             return
         }
         breakElapsed = max(0, floor(elapsed))
+        detectActivityIfNeeded(now: now)
+    }
+
+    private func detectActivityIfNeeded(now: Date) {
+        guard detectedActivityAt == nil, breakElapsed >= Self.activityDetectionDelay else { return }
+        let secondsSinceLast = secondsSinceLastUserInput()
+        guard secondsSinceLast < Self.activityIdleThreshold else { return }
+        detectedActivityAt = now.addingTimeInterval(-secondsSinceLast)
+    }
+
+    private func secondsSinceLastUserInput() -> TimeInterval {
+        Self.activityEventTypes
+            .map { CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: $0) }
+            .min() ?? .infinity
     }
 
     private func resetToInitialState() {

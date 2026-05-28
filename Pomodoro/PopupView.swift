@@ -39,7 +39,7 @@ private struct IdleView: View {
                 .font(.headline)
                 .foregroundStyle(.secondary)
 
-            Button(action: vm.start) {
+            Button(action: { vm.start() }) {
                 Label("Start  25:00", systemImage: "play.fill")
                     .font(.title2.weight(.semibold))
                     .frame(maxWidth: .infinity)
@@ -133,14 +133,38 @@ private struct CompletedView: View {
             }
 
             // Start next
-            Button(action: vm.start) {
-                Label("Start  25:00", systemImage: "play.fill")
-                    .font(.body.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+            VStack(spacing: 6) {
+                Button(action: { vm.start() }) {
+                    Label("Start  25:00", systemImage: "play.fill")
+                        .font(.body.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.borderedProminent)
+
+                if let activityAt = vm.detectedActivityAt,
+                   Date().timeIntervalSince(activityAt) < TimerViewModel.workDuration {
+                    Button(action: { vm.start(at: activityAt) }) {
+                        Text(backdatedStartLabel(for: activityAt))
+                            .font(.caption.weight(.medium))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("Start the Pomodoro as if it had begun when you returned to the computer")
+                }
             }
-            .buttonStyle(.borderedProminent)
         }
+    }
+
+    private func backdatedStartLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        let timeString = formatter.string(from: date)
+        let minutesAgo = Int(Date().timeIntervalSince(date) / 60)
+        let suffix = minutesAgo <= 0 ? "just now" : "\(minutesAgo) min ago"
+        return "Start at \(timeString) (\(suffix))"
     }
 }
 
