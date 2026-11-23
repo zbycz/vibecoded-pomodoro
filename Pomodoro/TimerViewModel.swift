@@ -29,6 +29,9 @@ final class TimerViewModel: ObservableObject {
     static let maxBreakDuration: TimeInterval = 12 * 60 * 60
     static let activityDetectionDelay: TimeInterval = 10
     static let activityIdleThreshold: TimeInterval = 2
+    /// Grace period after the user dismisses a detected activity, so they can
+    /// e.g. finish what they were doing or shut down the computer.
+    static let activityDismissDelay: TimeInterval = 60
 
     private static let activityEventTypes: [CGEventType] = [
         .keyDown, .flagsChanged,
@@ -44,6 +47,10 @@ final class TimerViewModel: ObservableObject {
      private var breakTimer: Timer?
      private var sessionStart: Date?
     private var breakStart: Date?
+    /// Activity detection only counts input that occurs after this moment
+    /// plus `activityGraceDelay`.
+    private var activityDetectionStart: Date?
+    private var activityGraceDelay: TimeInterval = TimerViewModel.activityDetectionDelay
 
     private let logManager = TimeLogManager()
 
@@ -107,6 +114,17 @@ final class TimerViewModel: ObservableObject {
         breakStart = nil
         breakElapsed = 0
         detectedActivityAt = nil
+        activityDetectionStart = nil
+        activityGraceDelay = Self.activityDetectionDelay
+    }
+
+    /// Dismiss the detected activity (e.g. non-work use after the session)
+    /// and restart detection after a longer grace period.
+    func dismissDetectedActivity() {
+        guard breakTimer != nil else { return }
+        detectedActivityAt = nil
+        activityDetectionStart = Date()
+        activityGraceDelay = Self.activityDismissDelay
     }
 
     // MARK: - Private helpers
@@ -144,8 +162,11 @@ final class TimerViewModel: ObservableObject {
     }
 
     private func startBreakTimer() {
-        breakStart = Date()
+        let now = Date()
+        breakStart = now
         breakElapsed = 0
+        activityDetectionStart = now
+        activityGraceDelay = Self.activityDetectionDelay
         breakTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.updateBreakElapsed()
@@ -168,14 +189,16 @@ final class TimerViewModel: ObservableObject {
     }
 
     private func detectActivityIfNeeded(now: Date) {
-        guard detectedActivityAt == nil, breakElapsed >= Self.activityDetectionDelay else { return }
+        guard detectedActivityAt == nil, let activityDetectionStart else { return }
+        let sinceDetectionStart = now.timeIntervalSince(activityDetectionStart)
+        guard sinceDetectionStart >= activityGraceDelay else { return }
         let secondsSinceLast = secondsSinceLastUserInput()
         // Require the event to be recent (sustained activity right now)…
         guard secondsSinceLast < Self.activityIdleThreshold else { return }
         // …AND to have occurred after the grace period ended, so that input
-        // from during the previous work session or the first 10s of break
-        // does not count as "user came back".
-        guard secondsSinceLast < breakElapsed - Self.activityDetectionDelay else { return }
+        // from during the previous work session, the first 10s of break, or
+        // the grace period after a dismissal does not count as "user came back".
+        guard secondsSinceLast < sinceDetectionStart - activityGraceDelay else { return }
         detectedActivityAt = now.addingTimeInterval(-secondsSinceLast)
     }
 

@@ -144,15 +144,25 @@ private struct CompletedView: View {
 
                 if let activityAt = vm.detectedActivityAt,
                    Date().timeIntervalSince(activityAt) < TimerViewModel.workDuration {
-                    Button(action: { vm.start(at: activityAt) }) {
-                        Text(backdatedStartLabel(for: activityAt))
-                            .font(.caption.weight(.medium))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 4)
+                    HStack(spacing: 6) {
+                        Button(action: { vm.start(at: activityAt) }) {
+                            Text(backdatedStartLabel(for: activityAt))
+                                .font(.caption.weight(.medium))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 4)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .help("Start the Pomodoro as if it had begun when you returned to the computer")
+
+                        Button(action: vm.dismissDetectedActivity) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Ignore this activity and detect again after \(Int(TimerViewModel.activityDismissDelay)) s")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .help("Start the Pomodoro as if it had begun when you returned to the computer")
                 }
             }
         }
